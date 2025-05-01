@@ -1,0 +1,69 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: git-clone
+spec:
+  params:
+    - name: repo-url
+      type: string
+    - name: revision
+      type: string
+      default: main
+  workspaces:
+    - name: output
+  steps:
+    - name: clone
+      image: alpine/git
+      workingDir: /workspace/output
+      script: |
+        git clone $(params.repo-url) --branch $(params.revision) .
+
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: lint
+spec:
+  workspaces:
+    - name: source
+  steps:
+    - name: flake8
+      image: python:3.10
+      workingDir: /workspace/source
+      script: |
+        pip install flake8
+        flake8 .
+
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: test
+spec:
+  workspaces:
+    - name: source
+  steps:
+    - name: pytest
+      image: python:3.10
+      workingDir: /workspace/source
+      script: |
+        pip install pytest
+        pytest
+
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: build-image
+spec:
+  params:
+    - name: IMAGE
+      type: string
+  steps:
+    - name: docker-build
+      image: docker
+      securityContext:
+        privileged: true
+      script: |
+        docker build -t $(params.IMAGE) .
+        docker images

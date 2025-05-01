@@ -1,0 +1,48 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: ci-pipeline
+spec:
+  params:
+    - name: repo-url
+    - name: revision
+      default: main
+    - name: IMAGE
+  workspaces:
+    - name: shared-data
+  tasks:
+    - name: clone
+      taskRef:
+        name: git-clone
+      params:
+        - name: repo-url
+          value: $(params.repo-url)
+        - name: revision
+          value: $(params.revision)
+      workspaces:
+        - name: output
+          workspace: shared-data
+
+    - name: lint
+      runAfter: [clone]
+      taskRef:
+        name: lint
+      workspaces:
+        - name: source
+          workspace: shared-data
+
+    - name: test
+      runAfter: [lint]
+      taskRef:
+        name: test
+      workspaces:
+        - name: source
+          workspace: shared-data
+
+    - name: build
+      runAfter: [test]
+      taskRef:
+        name: build-image
+      params:
+        - name: IMAGE
+          value: $(params.IMAGE)
