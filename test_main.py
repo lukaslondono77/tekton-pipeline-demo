@@ -8,4 +8,5 @@ def test_always_passes():
 
 def test_another_passing_test():
     """Test basic arithmetic."""
-    assert 1 + 1 == 2 
+    assert 1 + 1 == 2
+
